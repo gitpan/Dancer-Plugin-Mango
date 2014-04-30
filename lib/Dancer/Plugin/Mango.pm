@@ -26,14 +26,14 @@ Dancer::Plugin::Mango - MongoDB connections as provided by Mango.
 
 =head1 STATUS
 
-Horribly under-tested, may induce seizures and sudden death. You have been warned.
-Additionally, this module will require MongoDB 2.6+. This is primarily because Mango
-requires it. You will get an error "MongoDB wire protocol version 2 required" if this
-is not the case.
+Tested in a production environment. It's a good idea to read the documentation for
+Mango as it's async. Which means you must be ready to handle this. In most of my
+code I'm using the loop function to wait for the server response. However, for
+inserts, I'm not waiting at all. Handy.
 
 =cut
 
-our $VERSION = 0.35;
+our $VERSION = 0.36;
 
 my $settings = undef;
 my $conn = undef;
@@ -50,7 +50,7 @@ my %handles;
 my $def_handle = {};
 
 ## return a connected MongoDB object
-register mongo => sub {
+register mango => sub {
 
     my ( $self, $arg ) = plugin_args(@_);
 
@@ -140,10 +140,10 @@ register mongo => sub {
     }
 };
 
-register_hook(qw(mongodb_connected
-                 mongodb_connection_lost
-                 mongodb_connection_failed
-                 mongodb_error));
+register_hook(qw(mangodb_connected
+                 mangodb_connection_lost
+                 mangodb_connection_failed
+                 mangodb_error));
 register_plugin(for_versions => ['1', '2']);
 
 # Given the settings to use, try to get a database connection
@@ -290,7 +290,7 @@ __END__
 
 =head1 VERSION
 
-version 0.35
+version 0.36
 
 =head1 SYNOPSIS
 
@@ -298,8 +298,8 @@ version 0.35
     use Dancer::Plugin::Mango;
 
     get '/widget/view/:id' => sub {
-        my $mg = mongo('mongoa');
-        my $db = $mg->database('foo');
+        my $mg = mango('mongoa');
+        my $db = $mg->db('foo');
         my $cl = $db->collection('bar');
         my $curs = $cl->find({ this => param('id') });
 
@@ -309,7 +309,7 @@ version 0.35
     # or
 
     get '/widget/view/:id' => sub {
-        my $mg = mongo('mongoa')->database('foo')->collection('bar')->find({ this => param('id') });
+        my $mg = mango('mongoa')->db('foo')->collection('bar')->find({ this => param('id') });
 
         ..
     }
