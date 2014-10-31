@@ -26,14 +26,14 @@ Dancer::Plugin::Mango - MongoDB connections as provided by Mango.
 
 =head1 STATUS
 
-Tested in a production environment. It's a good idea to read the documentation for
-Mango as it's async. Which means you must be ready to handle this. In most of my
-code I'm using the loop function to wait for the server response. However, for
-inserts, I'm not waiting at all. Handy.
+Horribly under-tested, may induce seizures and sudden death. You have been warned.
+Additionally, this module will require MongoDB 2.6+. This is primarily because Mango
+requires it. You will get an error "MongoDB wire protocol version 2 required" if this
+is not the case.
 
 =cut
 
-our $VERSION = 0.36;
+our $VERSION = 0.40;
 
 my $settings = undef;
 my $conn = undef;
@@ -49,8 +49,7 @@ my %handles;
 # (Kudos to Igor Bujna for the idea)
 my $def_handle = {};
 
-## return a connected MongoDB object
-register mango => sub {
+sub moango {
 
     my ( $self, $arg ) = plugin_args(@_);
 
@@ -140,10 +139,15 @@ register mango => sub {
     }
 };
 
-register_hook(qw(mangodb_connected
-                 mangodb_connection_lost
-                 mangodb_connection_failed
-                 mangodb_error));
+## return a connected MongoDB object
+## registering both mango and mongo due to a typo that was released
+register mango => \&moango;
+register mongo => \&moango;
+
+register_hook(qw(mongodb_connected
+                 mongodb_connection_lost
+                 mongodb_connection_failed
+                 mongodb_error));
 register_plugin(for_versions => ['1', '2']);
 
 # Given the settings to use, try to get a database connection
@@ -290,7 +294,7 @@ __END__
 
 =head1 VERSION
 
-version 0.36
+version 0.40
 
 =head1 SYNOPSIS
 
@@ -298,8 +302,8 @@ version 0.36
     use Dancer::Plugin::Mango;
 
     get '/widget/view/:id' => sub {
-        my $mg = mango('mongoa');
-        my $db = $mg->db('foo');
+        my $mg = mongo('mongoa');
+        my $db = $mg->database('foo');
         my $cl = $db->collection('bar');
         my $curs = $cl->find({ this => param('id') });
 
@@ -309,7 +313,7 @@ version 0.36
     # or
 
     get '/widget/view/:id' => sub {
-        my $mg = mango('mongoa')->db('foo')->collection('bar')->find({ this => param('id') });
+        my $mg = mongo('mongoa')->database('foo')->collection('bar')->find({ this => param('id') });
 
         ..
     }
